@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 
 public class MainActivity extends AppCompatActivity {
+    int count = 10;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
