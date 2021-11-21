@@ -16,9 +16,9 @@ public class Decrypt {
     @RequiresApi(api = Build.VERSION_CODES.O)
     public static void  decrypt(){
         try{
-            String data = "mz4jRqVxU2XOpGApk2h9Fw==";
-            String key = "1234567812345678";
-            String iv = "1234567812345678";
+            String data = "CWEk+U32Jd4m6Yx+pcKSCw==";
+            String key = "1234567823435678";
+            String iv = "1234567282345678";
 
             Base64.Decoder decoder = Base64.getDecoder();
             byte[] encrypted1 = decoder.decode(data);

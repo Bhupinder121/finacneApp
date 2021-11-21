@@ -14,7 +14,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Decrypt decrypt = new Decrypt();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            decrypt.encrypt();
+            decrypt.decrypt();
         }
     }
 }
