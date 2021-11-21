@@ -1,8 +1,7 @@
-let socketServerUrl = "";
+let socketServerUrl = "http://192.168.0.118:4068";
 let privateServer = "http://192.168.0.118:3000";
 
 let socket = require('socket.io-client')(socketServerUrl);
-const { response } = require('express');
 const superagent = require('superagent');
 
 socket.on('connect', function(){
@@ -33,9 +32,11 @@ function executeGet(serverURL, params){
     .query(params)
     .end((err, response)=>{
         if(err){
-            return console.log(err);
+            console.log("err");
         }
-        socket.emit('page-response', response.text);
+        else{
+            socket.emit('page-response', response.text);
+        }
     });
 }
 
@@ -44,8 +45,10 @@ function executePost(serverURL, params){
     .query(params)
     .end((err, response)=>{
         if(err){
-            return console.log(err);
+            console.log(err);
         }
-        socket.emit('page-response', response.text);
+        else{
+            socket.emit('page-response', response.text);
+        }
     });
 }
