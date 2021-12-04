@@ -1,16 +1,25 @@
 package com.example.finacneapp;
 
+import android.app.ProgressDialog;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ProgressBar;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.github.mikephil.charting.animation.Easing;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 import com.github.mikephil.charting.formatter.PercentFormatter;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.ColorTemplate;
 
 import com.github.mikephil.charting.charts.PieChart;
@@ -19,20 +28,27 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     PieChart pieChart;
+    View limiter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        getSupportActionBar().setTitle("");
         pieChart = findViewById(R.id.piechart);
-//        encrypt_decrypt decrypt = new encrypt_decrypt();
-//        decrypt.decrypt();
+        limiter = findViewById(R.id.limit);
         setupPieChart();
         loadPieData();
+        ProgressBar simpleProgressBar=findViewById(R.id.progressBar); // initiate the progress bar
+
+//        limiter.setX(105);
+        simpleProgressBar.setProgress(60);
+        simpleProgressBar.setMax(100);
     }
 
     private void setupPieChart(){
         pieChart.setDrawHoleEnabled(true);
+
         pieChart.setUsePercentValues(false);
         pieChart.setCenterText("category");
         pieChart.setCenterTextSize(23);
@@ -40,19 +56,12 @@ public class MainActivity extends AppCompatActivity {
 
         pieChart.getLegend().setEnabled(false);
 
-//        Legend l = pieChart.getLegend();
-//        l.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
-//        l.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
-//        l.setOrientation(Legend.LegendOrientation.VERTICAL);
-//        l.setDrawInside(false);
-//        l.setEnabled(true);
-
     }
     private void loadPieData(){
         ArrayList<PieEntry> pieEntryes = new ArrayList();
         pieEntryes.add(new PieEntry(0.2f, "a"));
-        pieEntryes.add(new PieEntry(0.15f, "c"));
-        pieEntryes.add(new PieEntry(0.22f, "b"));
+        pieEntryes.add(new PieEntry(0.15f, "b"));
+        pieEntryes.add(new PieEntry(0.22f, "c"));
         pieEntryes.add(new PieEntry(0.10f, "d"));
 
         ArrayList<Integer> colors = new ArrayList();
@@ -65,10 +74,10 @@ public class MainActivity extends AppCompatActivity {
 
         PieDataSet pieDataSet = new PieDataSet(pieEntryes, "category");
         pieDataSet.setColors(colors);
-
+        pieDataSet.setYValuePosition(PieDataSet.ValuePosition.OUTSIDE_SLICE);
         PieData data = new PieData(pieDataSet);
         data.setDrawValues(false);
-//        data.setValueFormatter(new PercentFormatter(pieChart));
+
         pieChart.setData(data);
         pieChart.invalidate();
 
