@@ -3,6 +3,7 @@ package com.example.finacneapp;
 import android.app.ProgressDialog;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
@@ -23,8 +24,15 @@ import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.ColorTemplate;
 
 import com.github.mikephil.charting.charts.PieChart;
+import com.google.gson.JsonElement;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import retrofit2.Retrofit;
 
 public class MainActivity extends AppCompatActivity {
     PieChart pieChart;
@@ -35,15 +43,29 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         getSupportActionBar().setTitle("");
-        pieChart = findViewById(R.id.piechart);
-        limiter = findViewById(R.id.limit);
-        setupPieChart();
-        loadPieData();
-        ProgressBar simpleProgressBar=findViewById(R.id.progressBar); // initiate the progress bar
+//        setupPieChart();
+//        loadPieData();
 
-//        limiter.setX(105);
-        simpleProgressBar.setProgress(60);
-        simpleProgressBar.setMax(100);
+        serverConnector connector = new serverConnector();
+        connector.setup();
+        connector.getData(new Callback() {
+            @Override
+            public void onSucess(List<JsonElement> value) {
+                Log.i("data", value.toString());
+            }
+
+            @Override
+            public void onFailure(String error) {
+                Log.e("data", error);
+            }
+        });
+        JSONObject obj = new JSONObject();
+        try {
+            obj.put("data", "DATA");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        connector.sendData(obj);
     }
 
     private void setupPieChart(){
