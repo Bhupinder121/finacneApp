@@ -1,11 +1,17 @@
 package com.example.finacneapp;
 
+import static com.example.finacneapp.MainActivity.TAG;
+
+import static java.security.AccessController.getContext;
+
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
@@ -19,6 +25,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class serverConnector {
     RetrofitInterface retrofitInterface;
     Retrofit retrofit;
+
     String baseUrl = "http://192.168.0.118:420";
 
     public void setup(){
@@ -30,23 +37,30 @@ public class serverConnector {
         retrofitInterface = retrofit.create(RetrofitInterface.class);
     }
 
-    public void getData(com.example.finacneapp.Callback callback){
-        Call<List<JsonElement>> call = retrofitInterface.getData();
-        call.enqueue(new Callback<List<JsonElement>>() {
+    public void getData(String date_category, com.example.finacneapp.Callback callback){
+        Call<String> call = retrofitInterface.getData(date_category);
+        call.enqueue(new Callback<String>() {
             @Override
-            public void onResponse(Call<List<JsonElement>> call, Response<List<JsonElement>> response) {
-                callback.onSucess(response.body());
+            public void onResponse(Call<String> call, Response<String> response) {
+                String encrypedData = response.body().replace("t36i", "+").replace("8h3nk1", "/").replace("d3ink2", "=");
+                callback.onSucess(Encryption_Decryption.decrypt(encrypedData));
             }
 
             @Override
-            public void onFailure(Call<List<JsonElement>> call, Throwable t) {
-                callback.onFailure(t.getMessage());
+            public void onFailure(Call<String> call, Throwable t) {
+                callback.onSucess(t.getMessage());
             }
         });
     }
 
     public void sendData(JSONObject data){
-        Call<JSONObject> call = retrofitInterface.sendData(data);
+        JSONObject encryptedData = new JSONObject();
+        try {
+            encryptedData.put("json", Encryption_Decryption.encrypt(data.toString()));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        Call<JSONObject> call = retrofitInterface.sendData(encryptedData);
         call.enqueue(new Callback<JSONObject>() {
             @Override
             public void onResponse(Call<JSONObject> call, Response<JSONObject> response) {

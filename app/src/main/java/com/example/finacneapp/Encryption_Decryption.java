@@ -1,29 +1,24 @@
 package com.example.finacneapp;
 
-import android.os.Build;
+import static com.example.finacneapp.MainActivity.TAG;
+
 import android.util.Log;
 
-import androidx.annotation.RequiresApi;
-
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-public class encrypt_decrypt {
+public class Encryption_Decryption {
+    static String key = "2222222222222222";
+    static String iv = "2222222222222222";
 
-    public static void  decrypt(){
+    public static String decrypt(String data){
+        String decryptedString = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             try {
-                String data = "CWEk+U32Jd4m6Yx+pcKSCw==";
-                String key = "1234567823435678";
-                String iv = "1234567282345678";
-
-                Base64.Decoder decoder = null;
-                decoder = Base64.getDecoder();
-
+                Base64.Decoder decoder = Base64.getDecoder();
                 byte[] encrypted1 = decoder.decode(data);
 
                 Cipher cipher = Cipher.getInstance("AES/CBC/Pkcs7Padding");
@@ -34,33 +29,32 @@ public class encrypt_decrypt {
 
                 byte[] original = cipher.doFinal(encrypted1);
                 String originalString = new String(original);
-                Log.d("Sr", originalString.trim());
+                decryptedString = originalString.trim();
             } catch (Exception e) {
-                Log.e("Sr", e.toString());
+                e.printStackTrace();
+                decryptedString = e.toString();
             }
         }
+        return  decryptedString;
     }
 
-    public static void encrypt(){
+    public static String encrypt(String data){
+        String encryptedString = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             try {
                 byte[] encval = null;
-                String data = "Hello";
-                String key = "1234567812345678";
-                String iv = "1234567812345678";
                 Cipher cipher = Cipher.getInstance("AES/CBC/Pkcs7Padding");
                 SecretKeySpec keyspec = new SecretKeySpec(key.getBytes(), "AES");
                 IvParameterSpec ivspec = new IvParameterSpec(iv.getBytes());
                 cipher.init(Cipher.ENCRYPT_MODE, keyspec, ivspec);
                 encval = cipher.doFinal(data.getBytes());
-                String encryptedValue = null;
+                String encryptedValue = Base64.getEncoder().encodeToString(encval);
 
-                encryptedValue = Base64.getEncoder().encodeToString(encval);
-
-                System.out.println(encryptedValue);
+                encryptedString = encryptedValue;
             } catch (Exception e) {
-                Log.e("Sr", e.toString());
+                encryptedString = e.toString();
             }
         }
+        return encryptedString;
     }
 }

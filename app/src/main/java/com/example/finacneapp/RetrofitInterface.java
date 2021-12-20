@@ -11,11 +11,12 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
+import retrofit2.http.Query;
 
 public interface RetrofitInterface {
-    @GET("/getData")
-    Call<List<JsonElement>> getData();
+    @GET("/sendData")
+    Call<String> getData(@Query("data_query") String data_category);
 
-    @POST("/sendData")
+    @POST("/getData")
     Call<JSONObject> sendData(@Body JSONObject map);
 }

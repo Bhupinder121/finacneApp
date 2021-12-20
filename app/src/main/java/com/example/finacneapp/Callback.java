@@ -4,11 +4,12 @@ import android.service.media.MediaBrowserService;
 
 import com.google.gson.JsonElement;
 
+import org.json.JSONArray;
+
 import java.util.List;
 
 import javax.xml.transform.Result;
 
 public interface Callback {
-    void onSucess(List<JsonElement> value);
-    void onFailure(String error);
+    void onSucess(String value);
 }

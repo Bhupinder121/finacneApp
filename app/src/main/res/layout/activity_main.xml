@@ -15,57 +15,81 @@
         app:layout_constraintTop_toTopOf="parent" />
 
 
-    <androidx.appcompat.widget.LinearLayoutCompat
+    <TextView
+        android:id="@+id/currentState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Day budget"
+        app:layout_constraintBottom_toTopOf="@+id/linerLayout"
+        app:layout_constraintHorizontal_bias="0.523"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <LinearLayout
         android:id="@+id/linerLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="464dp"
         android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/piechart">
 
         <ProgressBar
             android:id="@+id/progressBar"
             style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="325dp"
+            android:layout_width="250dp"
             android:layout_height="match_parent"
+            android:paddingRight="3dp"
             android:progressDrawable="@drawable/custom_progress_bar"
             app:layout_constraintEnd_toStartOf="@+id/textView2"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             tools:layout_editor_absoluteY="667dp" />
 
-
-        <TextView
-            android:id="@+id/textView2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingLeft="5dp"
-            android:text="₹ 343 left"
-            app:layout_constraintEnd_toEndOf="parent"
+        <ProgressBar
+            android:id="@+id/limitProgress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="100dp"
+            android:layout_height="match_parent"
+            android:progressDrawable="@drawable/custom_progress_limit"
+            app:layout_constraintEnd_toStartOf="@+id/textView2"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
             tools:layout_editor_absoluteY="667dp" />
 
-    </androidx.appcompat.widget.LinearLayoutCompat>
+        <TextView
+            android:id="@+id/budget"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="₹1343 left"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:layout_editor_absoluteY="667dp" />
+    </LinearLayout>
 
-    <View
-        android:id="@+id/limit"
-        android:layout_width="1dp"
-        android:layout_height="0dp"
-        android:background="@color/white"
-        app:layout_constraintBottom_toBottomOf="@+id/linerLayout"
-        app:layout_constraintEnd_toEndOf="@+id/linerLayout"
-        app:layout_constraintHorizontal_bias="0.620"
-        app:layout_constraintStart_toStartOf="@+id/linerLayout"
-        app:layout_constraintTop_toTopOf="@+id/linerLayout"
-        app:layout_constraintVertical_bias="0.0" />
+    <com.google.android.material.slider.Slider
+        android:id="@+id/budgetSelecter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:stepSize="5"
+        android:value="50"
+        android:valueFrom="10"
+        android:valueTo="100"
+        app:tickVisible="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linerLayout" />
 
     <Button
+        android:id="@+id/spend"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Spend"
-        tools:layout_editor_absoluteX="16dp"
-        tools:layout_editor_absoluteY="410dp" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linerLayout" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
