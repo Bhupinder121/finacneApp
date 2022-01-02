@@ -1,20 +1,12 @@
 package com.example.finacneapp;
 
-import static com.example.finacneapp.MainActivity.TAG;
-
-import static java.security.AccessController.getContext;
-
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -38,17 +30,28 @@ public class serverConnector {
     }
 
     public void getData(String date_category, com.example.finacneapp.Callback callback){
+        date_category = Encryption_Decryption.encrypt(date_category);
         Call<String> call = retrofitInterface.getData(date_category);
         call.enqueue(new Callback<String>() {
             @Override
             public void onResponse(Call<String> call, Response<String> response) {
                 String encrypedData = response.body().replace("t36i", "+").replace("8h3nk1", "/").replace("d3ink2", "=");
-                callback.onSucess(Encryption_Decryption.decrypt(encrypedData));
+
+                try {
+                    callback.StringData(Encryption_Decryption.decrypt(encrypedData));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
             }
 
             @Override
             public void onFailure(Call<String> call, Throwable t) {
-                callback.onSucess(t.getMessage());
+                try {
+                    callback.StringData(t.getMessage());
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
