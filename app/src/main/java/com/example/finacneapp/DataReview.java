@@ -2,13 +2,16 @@ package com.example.finacneapp;
 
 
 import static com.example.finacneapp.MainActivity.TAG;
+import static com.example.finacneapp.MainActivity.connector;
 import static com.example.finacneapp.MainActivity.currentYear;
 import static com.example.finacneapp.MainActivity.getTableData;
 import static com.example.finacneapp.MainActivity.getTableName;
 import static com.example.finacneapp.MainActivity.months;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -30,19 +33,24 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.ColorTemplate;
+import com.google.gson.JsonObject;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.TimerTask;
 
 public class DataReview extends AppCompatActivity implements OnChartValueSelectedListener {
     private BarChart barChart;
     ArrayList<String> monthsName = new ArrayList<>();
+    ArrayList<JSONObject> perMonthData = new ArrayList<>();
     Spinner month_selector;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,53 +60,22 @@ public class DataReview extends AppCompatActivity implements OnChartValueSelecte
         barChart = findViewById(R.id.barChart);
         month_selector = findViewById(R.id.month_Selector);
 
-        MainActivity.monthDataSetup(new Callback() {
+
+        getMonthsName(DataReview.this, new Callback() {
             @Override
-            public void StringData(String value) {
+            public void StringData(String value) throws JSONException {
 
             }
+
             @Override
-            public void JsonData(JSONArray jsonObjects) {
+            public void JsonData(JSONArray jsonObjects){
                 try {
-                    setData(false, getTableName(months[new Date().getMonth()], currentYear), jsonObjects);
-                    monthsName = new ArrayList<>();
-                    monthsName.add("all month");
-                    monthsName.add(getTableName(months[new Date().getMonth()], currentYear));
-                    for (int i = 0; i < jsonObjects.length(); i++) {
-                        String monthTableName = jsonObjects.getString(i).substring(1, jsonObjects.getString(i).indexOf(":")).replace("\"", "");
-                        if(!monthsName.contains(monthTableName)) {
-                            monthsName.add(monthTableName);
-                        }
-                    }
-                    ArrayAdapter<String> adapter = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_spinner_dropdown_item, monthsName);
-
-                    month_selector.setAdapter(adapter);
-                    int position = adapter.getPosition(monthsName.get(monthsName.size()-1));
-                    month_selector.setSelection(position);
-
+                    addMonthName(jsonObjects);
                     month_selector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                         @Override
                         public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                             Object name = parent.getItemAtPosition(position);
-                            MainActivity.monthDataSetup(new Callback() {
-                                @Override
-                                public void StringData(String value) throws JSONException {
-
-                                }
-
-                                @Override
-                                public void JsonData(JSONArray jsonObjects) throws JSONException {
-                                    boolean month = false;
-                                    if(name == "all month"){
-                                        month = true;
-                                    }
-                                    try {
-                                        setData(month, (String) name, jsonObjects);
-                                    } catch (ParseException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            });
+                            setDataOnChart((String) name);
                         }
 
                         @Override
@@ -106,94 +83,127 @@ public class DataReview extends AppCompatActivity implements OnChartValueSelecte
 
                         }
                     });
-
-                } catch (JSONException | ParseException e) {
+                } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
         });
-
     }
 
 
-    private void setData(boolean month, String monthName, JSONArray jsonObjects) throws JSONException, ParseException {
-        ArrayList<BarEntry> values = new ArrayList<>();
+    private void setDataOnChart(String monthName){
         ArrayList<String> monthsLabel = new ArrayList<>();
-        final boolean[] done = {false};
-        String currentTable = monthName;
-        for (int i = 0; i < jsonObjects.length(); i++) {
-            final int[] combineYaxis = {0};
-            String monthTableName = jsonObjects.getString(i).substring(1, jsonObjects.getString(i).indexOf(":")).replace("\"", "");
-
-            if(!monthTableName.equals(currentTable) && !month){
-                continue;
+        boolean isThere = false;
+        Log.i(TAG, "setDataOnChart: "+perMonthData.size());
+        for (int i = 0; i < perMonthData.size(); i++) {
+            if(perMonthData.get(i).toString().contains(monthName)){
+                isThere = true;
             }
-            if(done[0]){
-                break;
-            }
-            int finalI = i;
-            getTableData(monthTableName, new Callback() {
+        }
+        if(!isThere){
+            addMonthDataToArray(monthName, new Callback() {
                 @Override
                 public void StringData(String value) throws JSONException {
+                    Log.i(TAG, "StringData: added");
+                    showDataOnChart(new JSONArray(value));
                 }
+
                 @Override
-                public void JsonData(JSONArray daysData) throws JSONException {
-                    for (int j = 0; j < daysData.length(); j++) {
-                        int exp = daysData.getJSONObject(j).getInt("exp");
-                        if(month) {
-                            combineYaxis[0] += exp;
-                        }
-                        else {
-                            values.add(new BarEntry(j, exp));
-                        }
-                    }
-                    if(month) {
-                        values.add(new BarEntry(finalI, combineYaxis[0]));
-                        monthsLabel.add(monthTableName);
-                    }
-                    else{
-                        done[0] = true;
-                    }
-                    if(jsonObjects.length() == values.size() || !month){
-                        BarDataSet barDataSet = new BarDataSet(values, "Dummy Data");
-                        barDataSet.setColors(ColorTemplate.MATERIAL_COLORS);
-                        barDataSet.setValueTextColor(Color.BLACK);
-                        barDataSet.setValueTextSize(16f);
-                        BarData barData = new BarData(barDataSet);
-
-                        XAxis xAxis = barChart.getXAxis();
-
-                        xAxis.setValueFormatter(barChart.getDefaultValueFormatter());
-
-                        if(month) {
-                            xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-                            ValueFormatter formatter = new ValueFormatter() {
-                                @Override
-                                public String getFormattedValue(float value) {
-                                    if(value < monthsLabel.size()){
-                                        return monthsLabel.get((int) value);
-                                    }
-                                    else{
-                                        return null;
-                                    }
-                                }
-                            };
-                            xAxis.setGranularity(1f); // minimum axis-step (interval) is 1
-                            xAxis.setValueFormatter(formatter);
-                        }
-
-                        barChart.getXAxis().setDrawGridLines(false);
-                        barChart.getDescription().setEnabled(false);
-                        barChart.getLegend().setEnabled(false);
-                        barChart.setData(barData);
-                        barChart.animateY(500);
-                    }
+                public void JsonData(JSONArray jsonObjects) throws JSONException {
 
                 }
             });
-
+        }
+        else {
+            for (int i = 0; i < perMonthData.size(); i++) {
+                if(perMonthData.get(i).toString().contains(monthName)){
+                    try {
+                        showDataOnChart(perMonthData.get(i).getJSONArray(monthName));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
         }
 
+    }
+
+    private void showDataOnChart(JSONArray daysData){
+        ArrayList<BarEntry> values = new ArrayList<>();
+        for (int j = 0; j < daysData.length(); j++) {
+            int exp = 0;
+            try {
+                exp = daysData.getJSONObject(j).getInt("exp");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            values.add(new BarEntry(j, exp));
+        }
+        BarDataSet barDataSet = new BarDataSet(values, "Dummy Data");
+        barDataSet.setColors(ColorTemplate.MATERIAL_COLORS);
+        barDataSet.setValueTextColor(Color.WHITE);
+        barDataSet.setValueTextSize(16f);
+        BarData barData = new BarData(barDataSet);
+        XAxis xAxis = barChart.getXAxis();
+
+        xAxis.setValueFormatter(barChart.getDefaultValueFormatter());
+
+        barChart.getXAxis().setTextColor(Color.WHITE);
+        barChart.getAxisRight().setTextColor(Color.WHITE);
+        barChart.getAxisLeft().setTextColor(Color.WHITE);
+        barChart.getXAxis().setDrawGridLines(false);
+        barChart.getDescription().setEnabled(false);
+        barChart.getLegend().setEnabled(false);
+        barChart.setData(barData);
+        barChart.animateY(500);
+    }
+
+    private void addMonthDataToArray(String monthName, Callback callback){
+        getTableData(monthName, this, new Callback() {
+            @Override
+            public void StringData(String value) throws JSONException {
+                JSONArray jsonArray = new JSONArray(value);
+                perMonthData.add(new JSONObject().put(monthName, jsonArray));
+                callback.StringData(value);
+            }
+
+            @Override
+            public void JsonData(JSONArray jsonObjects) throws JSONException {
+
+            }
+        });
+    }
+
+    private void addMonthName(JSONArray jsonObjects) throws JSONException {
+        monthsName = new ArrayList<>();
+        monthsName.add(getTableName(months[new Date().getMonth()], currentYear));
+        for (int i = 0; i < jsonObjects.length(); i++) {
+            String monthTableName = jsonObjects.getJSONObject(i).getString("TABLE_NAME");
+            if(!monthsName.contains(monthTableName)) {
+                monthsName.add(monthTableName);
+            }
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_month_selector, monthsName);
+
+        month_selector.setAdapter(adapter);
+        int position = adapter.getPosition(monthsName.get(0));
+        month_selector.setSelection(position);
+    }
+
+    private void getMonthsName(Context context, Callback callback){
+        String command = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE 'month_%'";
+        connector.getData(command, context, new Callback() {
+            @Override
+            public void StringData(String value) throws JSONException {
+                JSONArray jsonArray = new JSONArray(value);
+                callback.JsonData(jsonArray);
+            }
+
+            @Override
+            public void JsonData(JSONArray jsonObjects) {
+
+            }
+        });
     }
 
     @Override

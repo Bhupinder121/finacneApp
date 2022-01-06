@@ -17,6 +17,9 @@ public interface RetrofitInterface {
     @GET("/sendData")
     Call<String> getData(@Query("data_query") String data_category);
 
+    @GET("/getResponse")
+    Call<String> getResponse();
+
     @POST("/getData")
     Call<JSONObject> sendData(@Body JSONObject map);
 }

@@ -1,6 +1,8 @@
 package com.example.finacneapp;
 
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,6 +24,12 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.Entry;
@@ -35,6 +43,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.slider.Slider;
 import com.google.gson.JsonObject;
 
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -42,6 +51,7 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener{
     PieChart pieChart;
@@ -61,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     static String currentYear;
 
 
-    boolean toggle = true;
+    boolean toggle = false;
     static String[] months = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
 
     @Override
@@ -87,49 +97,60 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         connector = new serverConnector();
         connector.setup();
 
+
         setupPieChart();
-        categoryDataSetup(true);
+        categoryDataSetup();
 
+        new java.util.Timer().schedule(
+                new java.util.TimerTask() {
+                    @Override
+                    public void run() {
+                        resetProgressBar();
+                    }
+                },
+                100
+        );
+        new java.util.Timer().schedule(
+            new java.util.TimerTask() {
+                @Override
+                public void run() {
+                    setuplineChart();
+                }
+            },
+            100
+        );
 
-        getTableData(getTableName(months[new Date().getMonth()], currentYear), new Callback() {
-            @Override
-            public void StringData(String value) {
-
-            }
-
-            @RequiresApi(api = Build.VERSION_CODES.O)
-            @Override
-            public void JsonData(JSONArray jsonObjects) {
-                progressBarSetup(true, jsonObjects);
-            }
-        });
-
-//        getSupportActionBar().setTitle("");
 
         progressBar.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                getTableData(getTableName(months[new Date().getMonth()], currentYear), new Callback() {
+                getTableData(getTableName(months[new Date().getMonth()], currentYear), MainActivity.this, new Callback() {
                     @Override
                     public void StringData(String value) {
 
                     }
-
                     @Override
                     public void JsonData(JSONArray jsonObjects) {
                         progressBarSetup(toggle, jsonObjects);
                     }
                 });
 
-                if(toggle){
+                if(!toggle){
                     currentState.setText("Month budget");
-                    toggle = false;
+                    toggle = true;
                 }
                 else {
                     currentState.setText("Day budget");
-                    toggle = true;
+                    toggle = false;
                 }
                 return false;
+            }
+        });
+
+        budgetPer.addOnChangeListener(new Slider.OnChangeListener() {
+            @Override
+            public void onValueChange(@NonNull Slider slider, float value, boolean fromUser) {
+                budgetNum.setText(String.valueOf(value));
             }
         });
 
@@ -149,15 +170,19 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                     e.printStackTrace();
                 }
                 connector.sendData(obj);
+                new java.util.Timer().schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                resetProgressBar();
+                            }
+                        },
+                        200
+                );
             }
         });
 
-        budgetPer.addOnChangeListener(new Slider.OnChangeListener() {
-            @Override
-            public void onValueChange(@NonNull Slider slider, float value, boolean fromUser) {
-                budgetNum.setText(String.valueOf(value));
-            }
-        });
+//
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnNavigationItemSelectedListener(this);
@@ -184,12 +209,13 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             }
         });
 
-        setuplineChart();
+
+
 
     }
 
     private void setuplineChart(){
-        getTableData(getTableName(months[new Date().getMonth()], currentYear), new Callback() {
+        getTableData(getTableName(months[new Date().getMonth()], currentYear), this, new Callback() {
             @Override
             public void StringData(String value) throws JSONException {
 
@@ -198,28 +224,34 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             @Override
             public void JsonData(JSONArray jsonObjects) throws JSONException {
                 ArrayList<Entry> values = new ArrayList<>();
+
                 for (int i = 0; i < jsonObjects.length(); i++) {
                     values.add(new Entry(i, jsonObjects.getJSONObject(i).getInt("amt")));
                 }
                 LineDataSet lineDataSet = new LineDataSet(values, "Amount");
-                lineDataSet.setLineWidth(3);
-
+                lineDataSet.setLineWidth(2);
+                lineDataSet.setValueTextColor(Color.WHITE);
+                lineDataSet.setValueTextSize(10);
 
                 LineData lineData = new LineData(lineDataSet);
-                lineChart.getXAxis().setDrawGridLines(false);
+
+                lineChart.getAxisRight().setTextColor(Color.WHITE);
+                lineChart.getAxisLeft().setTextColor(Color.WHITE);
+                lineChart.getDescription().setEnabled(false);
+                lineChart.getXAxis().setEnabled(false);
+                lineChart.getLegend().setEnabled(false);
                 lineChart.animateY(10);
                 lineChart.setData(lineData);
             }
         });
     }
 
-
-    private void progressBarSetup(boolean toggle, JSONArray jsonObjects){
+    private void progressBarSetup(boolean month, JSONArray jsonObjects){
         int budgetAmt = 0;
         int expAmt = 0;
         int totalAmt = 0;
         int index = 0;
-        if(toggle){
+        if(!month){
             index = jsonObjects.length()-1;
         }
         for (int i = index; i < jsonObjects.length(); i++){
@@ -240,7 +272,6 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         limitBar.setMax(totalAmt);
         if(expAmt>budgetAmt){
             limitBar.setProgress(expAmt);
-            Log.i(TAG, "onSucess: "+limitBar.getProgress());
         }
         else {
             limitBar.setProgress(0);
@@ -251,51 +282,17 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         budgetText.setText("₹"+(budgetAmt-expAmt)+" left");
     }
 
-    public static void monthDataSetup(Callback callback){
-        String command = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE 'month_%'";
-        connector.getData(command, new Callback() {
-            @Override
-            public void StringData(String value) throws JSONException {
-                JSONArray jsonArray = new JSONArray(value);
-                JSONArray allMonths = new JSONArray();
 
-                for(int i = 0; i < jsonArray.length(); i++){
-                    String tableName = jsonArray.getJSONObject(i).getString("TABLE_NAME");
-                    getTableData(tableName, new Callback() {
-                        @Override
-                        public void StringData(String value) throws JSONException {
-                            JSONObject jsonObject = new JSONObject();
-                            jsonObject.put(tableName, value);
-                            allMonths.put(jsonObject);
-                            if(allMonths.length() == jsonArray.length()){
-                                callback.JsonData(allMonths);
-                            }
-                        }
 
-                        @Override
-                        public void JsonData(JSONArray jsonObjects) {
+    public static void getTableData(String tableName, Context context, Callback callback){
+        String command = String.format("SELECT * FROM %s", tableName);
 
-                        }
-                    });
-                }
-
-//                callback.JsonData(a);
-                
-            }
-
-            @Override
-            public void JsonData(JSONArray jsonObjects) {
-
-            }
-        });
-    }
-
-    public static void getTableData(String tableName, Callback callback){
-        connector.getData(String.format("SELECT * FROM %s", tableName), new Callback() {
+        connector.getData(command, context, new Callback() {
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void StringData(String value) {
                 try {
+                    Log.i(TAG, "StringData: "+value);
                     JSONArray jsonArray = new JSONArray(value);
                     callback.JsonData(jsonArray);
                     callback.StringData(value);
@@ -313,28 +310,35 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         });
     }
 
-    private void categoryDataSetup(boolean toggle){
-        connector.getData("SELECT * FROM exp_category", new Callback() {
+    private void categoryDataSetup(){
+        connector.getData("SELECT * FROM exp_category", this, new Callback() {
             @Override
             public void StringData(String value) {
                 try {
                     category_name = new ArrayList();
+                    category_amt = new ArrayList<>();
                     JSONArray jsonArray = new JSONArray(value);
                     for (int i = 0; i < jsonArray.length(); i++){
-                        if(!category_name.contains(jsonArray.getJSONObject(i).getString("ExpCate"))) {
-                            category_name.add(jsonArray.getJSONObject(i).getString("ExpCate"));
+                        String category = jsonArray.getJSONObject(i).getString("ExpCate");
+                        if(!category_name.contains(category)) {
+                            category_name.add(category);
                         }
                     }
-                    if(toggle) {
-                        if(category_name.size()>0) {
-                            String command = String.format("SELECT ExpAmt FROM exp_category WHERE ExpCate = '%s'", category_name.get(0));
-                            getPieData(command, 0);
+                    if(category_name.size()>0) {
+                        for (int i = 0; i < category_name.size(); i++) {
+                            int amt = 0;
+                            for (int j = 0; j < jsonArray.length(); j++) {
+                                String jsonCategory = jsonArray.getJSONObject(j).getString("ExpCate");
+                                if(jsonCategory.equals(category_name.get(i))){
+                                    int categoryAmt = jsonArray.getJSONObject(j).getInt("ExpAmt");
+                                    amt += categoryAmt;
+                                }
+                            }
+                            category_amt.add(amt);
                         }
+                        loadPieData(category_amt);
                     }
-                    else {
-                        ArrayAdapter<String> adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, category_name);
-                        autoCompleteTextView.setAdapter(adapter);
-                    }
+
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -349,13 +353,27 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     }
 
 
+    private void resetProgressBar(){
+        getTableData(getTableName(months[new Date().getMonth()], currentYear), MainActivity.this, new Callback() {
+            @Override
+            public void StringData(String value) {
+
+            }
+
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void JsonData(JSONArray jsonObjects) {
+                progressBarSetup(toggle, jsonObjects);
+            }
+        });
+    }
+
     private void setupPieChart(){
         pieChart.setDrawHoleEnabled(true);
         pieChart.setUsePercentValues(false);
         pieChart.setCenterText("category");
         pieChart.setCenterTextSize(23);
         pieChart.getDescription().setEnabled(false);
-
         pieChart.getLegend().setEnabled(false);
 
     }
@@ -368,7 +386,8 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
         autoCompleteTextView = addExp.findViewById(R.id.auto);
 
-        categoryDataSetup(false);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, category_name);
+        autoCompleteTextView.setAdapter(adapter);
 
         autoCompleteTextView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -391,22 +410,19 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                                     // your code here
                                     pieChart.clearValues();
                                     pieChart.clear();
-                                    categoryDataSetup(true);
-                                    getTableData(getTableName(months[new Date().getMonth()], new SimpleDateFormat("yyyy").format(new Date())),
-                                            new Callback() {
-                                        @Override
-                                        public void StringData(String value) {
+                                    new java.util.Timer().schedule(
+                                            new TimerTask() {
+                                                @Override
+                                                public void run() {
+                                                    categoryDataSetup();
+                                                }
+                                            }
+                                    , 100);
 
-                                        }
-
-                                        @Override
-                                        public void JsonData(JSONArray jsonObjects) {
-                                            progressBarSetup(toggle, jsonObjects);
-                                        }
-                                    });
+                                    resetProgressBar();
                                 }
                             },
-                            1000
+                            500
                     );
 
                 }
@@ -421,41 +437,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     }
 
 
-    private void getPieData(String command, int index){
-        if(index == 0){
-            category_amt = new ArrayList<>();
-        }
-        connector.getData(command, new Callback() {
-            @Override
-            public void StringData(String value) {
-                try {
-                    JSONArray jsonObject = new JSONArray(value);
-                    int amount = 0;
-                    for (int i = 0; i < jsonObject.length(); i++){
-                        amount += jsonObject.getJSONObject(i).getInt("ExpAmt");
-                    }
-                    category_amt.add(amount);
-                    if(index+1 < category_name.size()) {
-                        String command = String.format("SELECT ExpAmt FROM exp_category WHERE ExpCate = '%s'", category_name.get(index+1));
-                        getPieData(command, index+1);
-                    }
-                    if(category_amt.size()==category_name.size()) {
-                        loadPieData(category_amt);
-                    }
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-            @Override
-            public void JsonData(JSONArray jsonObjects) {
-
-            }
-        });
-    }
-
     private void loadPieData(ArrayList<Integer> category_amt){
-
         ArrayList<PieEntry> pieEntryes = new ArrayList();
         for (int i = 0; i < category_amt.size(); i++) {
             pieEntryes.add(new PieEntry(category_amt.get(i), category_name.get(i)));
@@ -469,9 +451,11 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             colors.add(color);
         }
 
+
         PieDataSet pieDataSet = new PieDataSet(pieEntryes, "category");
+        pieDataSet.setValueTextColor(Color.BLACK);
         pieDataSet.setColors(colors);
-        pieDataSet.setYValuePosition(PieDataSet.ValuePosition.OUTSIDE_SLICE);
+
         PieData data = new PieData(pieDataSet);
         data.setDrawValues(false);
 
