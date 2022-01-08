@@ -97,7 +97,6 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         connector = new serverConnector();
         connector.setup();
 
-
         setupPieChart();
         categoryDataSetup();
 
@@ -117,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                     setuplineChart();
                 }
             },
-            100
+            200
         );
 
 
@@ -408,8 +407,13 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                                 @Override
                                 public void run() {
                                     // your code here
-                                    pieChart.clearValues();
-                                    pieChart.clear();
+                                    try {
+                                        pieChart.clearValues();
+                                        pieChart.clear();
+                                    }
+                                    catch (Exception e){
+                                        e.printStackTrace();
+                                    }
                                     new java.util.Timer().schedule(
                                             new TimerTask() {
                                                 @Override
