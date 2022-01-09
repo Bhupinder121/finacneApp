@@ -41,22 +41,6 @@ public class loading_screen extends AppCompatActivity {
         connector.setup();
         String currentYear = new SimpleDateFormat("yyyy").format(new Date());
 
-        new java.util.Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                categoryDataSetup(new Callback() {
-                    @Override
-                    public void StringData(String value) throws JSONException {
-                        update();
-                    }
-
-                    @Override
-                    public void JsonData(JSONArray jsonObjects) throws JSONException {
-
-                    }
-                });
-            }
-        }, 100);
 
        new java.util.Timer().schedule(new TimerTask() {
            @Override
@@ -71,6 +55,17 @@ public class loading_screen extends AppCompatActivity {
                    public void JsonData(JSONArray jsonObjects) {
                        tableData = jsonObjects;
                        update();
+                       categoryDataSetup(loading_screen.this, new Callback() {
+                           @Override
+                           public void StringData(String value){
+                               update();
+                           }
+
+                           @Override
+                           public void JsonData(JSONArray jsonObjects) throws JSONException {
+
+                           }
+                       });
                    }
                });
            }
@@ -89,15 +84,12 @@ public class loading_screen extends AppCompatActivity {
     }
 
     public static void getTableData(String tableName, Context context, Callback callback){
-
         String command = String.format("SELECT * FROM %s", tableName);
-        Log.i(TAG, "getTableData: "+command);
         connector.getData(command, context, new Callback() {
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void StringData(String value) {
                 try {
-                    Log.i("mes", "StringData: "+value);
                     JSONArray jsonArray = new JSONArray(value);
                     callback.JsonData(jsonArray);
                     callback.StringData(value);
@@ -115,8 +107,8 @@ public class loading_screen extends AppCompatActivity {
         });
     }
 
-    private void categoryDataSetup(Callback callback){
-        connector.getData("SELECT * FROM exp_category", this, new Callback() {
+    public static void categoryDataSetup(Context context,Callback callback){
+        connector.getData("SELECT * FROM exp_category", context, new Callback() {
             @Override
             public void StringData(String value) {
                 try {

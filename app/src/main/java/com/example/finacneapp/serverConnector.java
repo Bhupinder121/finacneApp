@@ -74,7 +74,7 @@ public class serverConnector{
 
     }
 
-    public void sendData(JSONObject data){
+    public void sendData(JSONObject data, com.example.finacneapp.Callback callback){
         JSONObject encryptedData = new JSONObject();
         try {
             encryptedData.put("json", Encryption_Decryption.encrypt(data.toString()));
@@ -86,6 +86,11 @@ public class serverConnector{
             @Override
             public void onResponse(Call<JSONObject> call, Response<JSONObject> response) {
                 if (response.code() == 200) {
+                    try {
+                        callback.StringData(response.message());
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
                     Log.i("data", response.message());
                 }
             }

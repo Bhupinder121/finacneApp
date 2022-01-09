@@ -3,6 +3,7 @@ package com.example.finacneapp;
 import static com.example.finacneapp.loading_screen.getTableData;
 import static com.example.finacneapp.loading_screen.getTableName;
 import static com.example.finacneapp.loading_screen.months;
+import static com.example.finacneapp.loading_screen.tableData;
 
 import android.content.Intent;
 import android.graphics.Color;
@@ -44,7 +45,7 @@ import com.github.mikephil.charting.data.PieEntry;
 import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.slider.Slider;
-import com.google.gson.JsonObject;
+
 
 
 import org.json.JSONArray;
@@ -101,25 +102,11 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
         setupPieChart();
         loadPieData(loading_screen.category_amt, loading_screen.category_name);
-        progressBarSetup(false, loading_screen.tableData);
-        setuplineChart(loading_screen.tableData);
-
 
 
         progressBar.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                getTableData(getTableName(months[new Date().getMonth()], currentYear), MainActivity.this, new Callback() {
-                    @Override
-                    public void StringData(String value) {
-
-                    }
-                    @Override
-                    public void JsonData(JSONArray jsonObjects) {
-                        progressBarSetup(toggle, jsonObjects);
-                    }
-                });
-
                 if(!toggle){
                     currentState.setText("Month budget");
                     toggle = true;
@@ -128,6 +115,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                     currentState.setText("Day budget");
                     toggle = false;
                 }
+                progressBarSetup(toggle, tableData);
                 return false;
             }
         });
@@ -136,10 +124,18 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             @Override
             public void onValueChange(@NonNull Slider slider, float value, boolean fromUser) {
                 budgetNum.setText(String.valueOf(value));
+                try {
+                    String moneyLeft = String.valueOf(Math.round(tableData.getJSONObject(tableData.length()-1).getInt("amt")*(value/100)));
+                    budgetText.setText("₹"+moneyLeft+" left");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
             }
         });
 
-
+        
+        
         budgetPer.addOnSliderTouchListener(new Slider.OnSliderTouchListener() {
             @Override
             public void onStartTrackingTouch(@NonNull Slider slider) {
@@ -154,20 +150,23 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                connector.sendData(obj);
-                new java.util.Timer().schedule(
-                        new java.util.TimerTask() {
-                            @Override
-                            public void run() {
-                                resetProgressBar();
-                            }
-                        },
-                        200
-                );
+                connector.sendData(obj, new Callback() {
+                    @Override
+                    public void StringData(String value) throws JSONException {
+                        resetProgressBar();
+                    }
+
+                    @Override
+                    public void JsonData(JSONArray jsonObjects) throws JSONException {
+
+                    }
+                });
+
             }
         });
 
-//
+        progressBarSetup(false, loading_screen.tableData);
+        setuplineChart(loading_screen.tableData);
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnNavigationItemSelectedListener(this);
@@ -183,7 +182,17 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                         JSONObject jsonObject = new JSONObject();
                         try {
                             jsonObject.put("income", text);
-                            connector.sendData(jsonObject);
+                            connector.sendData(jsonObject, new Callback() {
+                                @Override
+                                public void StringData(String value) throws JSONException {
+
+                                }
+
+                                @Override
+                                public void JsonData(JSONArray jsonObjects) throws JSONException {
+
+                                }
+                            });
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -215,7 +224,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
         LineData lineData = new LineData(lineDataSet);
 
-        lineChart.getAxisRight().setTextColor(Color.WHITE);
+        lineChart.getAxisRight().setEnabled(false);
         lineChart.getAxisLeft().setTextColor(Color.WHITE);
         lineChart.getDescription().setEnabled(false);
         lineChart.getXAxis().setEnabled(false);
@@ -265,7 +274,17 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
 
     private void resetProgressBar(){
+        getTableData(getTableName(months[new Date().getMonth()], currentYear), this, new Callback() {
+            @Override
+            public void StringData(String value) throws JSONException {
 
+            }
+
+            @Override
+            public void JsonData(JSONArray jsonObjects) throws JSONException {
+                progressBarSetup(toggle, jsonObjects);
+            }
+        });
     }
 
     private void setupPieChart(){
@@ -302,33 +321,35 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-                    connector.sendData(obj);
-                    new java.util.Timer().schedule(
-                            new java.util.TimerTask() {
+                    connector.sendData(obj, new Callback() {
+                        @Override
+                        public void StringData(String value) throws JSONException {
+                            try {
+                                pieChart.clearValues();
+                                pieChart.clear();
+                            }
+                            catch (Exception e){
+                                e.printStackTrace();
+                            }
+                            loading_screen.categoryDataSetup(MainActivity.this, new Callback() {
                                 @Override
-                                public void run() {
-                                    // your code here
-                                    try {
-                                        pieChart.clearValues();
-                                        pieChart.clear();
-                                    }
-                                    catch (Exception e){
-                                        e.printStackTrace();
-                                    }
-//                                    new java.util.Timer().schedule(
-//                                            new TimerTask() {
-//                                                @Override
-//                                                public void run() {
-//                                                    categoryDataSetup();
-//                                                }
-//                                            }
-//                                    , 100);
+                                public void StringData(String value) throws JSONException {
 
+                                }
+
+                                @Override
+                                public void JsonData(JSONArray jsonObjects) throws JSONException {
+                                    loadPieData(loading_screen.category_amt, loading_screen.category_name);
                                     resetProgressBar();
                                 }
-                            },
-                            500
-                    );
+                            });
+                        }
+
+                        @Override
+                        public void JsonData(JSONArray jsonObjects) throws JSONException {
+
+                        }
+                    });
 
                 }
                 expAmt.setText("");
