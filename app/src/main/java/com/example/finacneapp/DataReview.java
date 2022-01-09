@@ -4,9 +4,8 @@ package com.example.finacneapp;
 import static com.example.finacneapp.MainActivity.TAG;
 import static com.example.finacneapp.MainActivity.connector;
 import static com.example.finacneapp.MainActivity.currentYear;
-import static com.example.finacneapp.MainActivity.getTableData;
-import static com.example.finacneapp.MainActivity.getTableName;
-import static com.example.finacneapp.MainActivity.months;
+import static com.example.finacneapp.loading_screen.getTableData;
+import static com.example.finacneapp.loading_screen.months;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -176,7 +175,7 @@ public class DataReview extends AppCompatActivity implements OnChartValueSelecte
 
     private void addMonthName(JSONArray jsonObjects) throws JSONException {
         monthsName = new ArrayList<>();
-        monthsName.add(getTableName(months[new Date().getMonth()], currentYear));
+        monthsName.add(loading_screen.getTableName(months[new Date().getMonth()], currentYear));
         for (int i = 0; i < jsonObjects.length(); i++) {
             String monthTableName = jsonObjects.getJSONObject(i).getString("TABLE_NAME");
             if(!monthsName.contains(monthTableName)) {

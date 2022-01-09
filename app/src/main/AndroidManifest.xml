@@ -13,12 +13,15 @@
         android:theme="@style/Theme.FinacneApp"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+        <activity
             android:name=".DataReview"
             android:exported="false"
             android:label="@string/title_activity_data_review"
             android:theme="@style/Theme.FinacneApp.NoActionBar" />
         <activity
-            android:name=".MainActivity"
+            android:name=".loading_screen"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -1,6 +1,9 @@
 package com.example.finacneapp;
 
-import android.content.Context;
+import static com.example.finacneapp.loading_screen.getTableData;
+import static com.example.finacneapp.loading_screen.getTableName;
+import static com.example.finacneapp.loading_screen.months;
+
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
@@ -61,8 +64,8 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     View addExp;
     AlertDialog.Builder dialogBuilder;
     public static String TAG = "mes";
-    ArrayList<String> category_name;
-    ArrayList<Integer> category_amt;
+    public static ArrayList<String> category_name;
+    public static ArrayList<Integer> category_amt;
     AutoCompleteTextView autoCompleteTextView;
     ProgressBar progressBar, limitBar;
     TextView budgetText, currentState;
@@ -72,7 +75,6 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
 
     boolean toggle = false;
-    static String[] months = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,26 +100,10 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         connector.setup();
 
         setupPieChart();
-        categoryDataSetup();
+        loadPieData(loading_screen.category_amt, loading_screen.category_name);
+        progressBarSetup(false, loading_screen.tableData);
+        setuplineChart(loading_screen.tableData);
 
-        new java.util.Timer().schedule(
-                new java.util.TimerTask() {
-                    @Override
-                    public void run() {
-                        resetProgressBar();
-                    }
-                },
-                100
-        );
-        new java.util.Timer().schedule(
-            new java.util.TimerTask() {
-                @Override
-                public void run() {
-                    setuplineChart();
-                }
-            },
-            200
-        );
 
 
         progressBar.setOnLongClickListener(new View.OnLongClickListener() {
@@ -213,36 +199,29 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
     }
 
-    private void setuplineChart(){
-        getTableData(getTableName(months[new Date().getMonth()], currentYear), this, new Callback() {
-            @Override
-            public void StringData(String value) throws JSONException {
-
+    private void setuplineChart(JSONArray jsonObjects){
+        ArrayList<Entry> values = new ArrayList<>();
+        for (int i = 0; i < jsonObjects.length(); i++) {
+            try {
+                values.add(new Entry(i, jsonObjects.getJSONObject(i).getInt("amt")));
+            } catch (JSONException e) {
+                Log.i(TAG, "setuplineChart: "+e.getMessage());
             }
+        }
+        LineDataSet lineDataSet = new LineDataSet(values, "Amount");
+        lineDataSet.setLineWidth(2);
+        lineDataSet.setValueTextColor(Color.WHITE);
+        lineDataSet.setValueTextSize(10);
 
-            @Override
-            public void JsonData(JSONArray jsonObjects) throws JSONException {
-                ArrayList<Entry> values = new ArrayList<>();
+        LineData lineData = new LineData(lineDataSet);
 
-                for (int i = 0; i < jsonObjects.length(); i++) {
-                    values.add(new Entry(i, jsonObjects.getJSONObject(i).getInt("amt")));
-                }
-                LineDataSet lineDataSet = new LineDataSet(values, "Amount");
-                lineDataSet.setLineWidth(2);
-                lineDataSet.setValueTextColor(Color.WHITE);
-                lineDataSet.setValueTextSize(10);
-
-                LineData lineData = new LineData(lineDataSet);
-
-                lineChart.getAxisRight().setTextColor(Color.WHITE);
-                lineChart.getAxisLeft().setTextColor(Color.WHITE);
-                lineChart.getDescription().setEnabled(false);
-                lineChart.getXAxis().setEnabled(false);
-                lineChart.getLegend().setEnabled(false);
-                lineChart.animateY(10);
-                lineChart.setData(lineData);
-            }
-        });
+        lineChart.getAxisRight().setTextColor(Color.WHITE);
+        lineChart.getAxisLeft().setTextColor(Color.WHITE);
+        lineChart.getDescription().setEnabled(false);
+        lineChart.getXAxis().setEnabled(false);
+        lineChart.getLegend().setEnabled(false);
+        lineChart.animateY(10);
+        lineChart.setData(lineData);
     }
 
     private void progressBarSetup(boolean month, JSONArray jsonObjects){
@@ -283,88 +262,10 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
 
 
-    public static void getTableData(String tableName, Context context, Callback callback){
-        String command = String.format("SELECT * FROM %s", tableName);
-
-        connector.getData(command, context, new Callback() {
-            @RequiresApi(api = Build.VERSION_CODES.O)
-            @Override
-            public void StringData(String value) {
-                try {
-                    Log.i(TAG, "StringData: "+value);
-                    JSONArray jsonArray = new JSONArray(value);
-                    callback.JsonData(jsonArray);
-                    callback.StringData(value);
-
-                } catch (JSONException e) {
-                    Log.e(TAG, "StringData: "+e.toString() );
-                }
-
-            }
-
-            @Override
-            public void JsonData(JSONArray jsonObjects) {
-
-            }
-        });
-    }
-
-    private void categoryDataSetup(){
-        connector.getData("SELECT * FROM exp_category", this, new Callback() {
-            @Override
-            public void StringData(String value) {
-                try {
-                    category_name = new ArrayList();
-                    category_amt = new ArrayList<>();
-                    JSONArray jsonArray = new JSONArray(value);
-                    for (int i = 0; i < jsonArray.length(); i++){
-                        String category = jsonArray.getJSONObject(i).getString("ExpCate");
-                        if(!category_name.contains(category)) {
-                            category_name.add(category);
-                        }
-                    }
-                    if(category_name.size()>0) {
-                        for (int i = 0; i < category_name.size(); i++) {
-                            int amt = 0;
-                            for (int j = 0; j < jsonArray.length(); j++) {
-                                String jsonCategory = jsonArray.getJSONObject(j).getString("ExpCate");
-                                if(jsonCategory.equals(category_name.get(i))){
-                                    int categoryAmt = jsonArray.getJSONObject(j).getInt("ExpAmt");
-                                    amt += categoryAmt;
-                                }
-                            }
-                            category_amt.add(amt);
-                        }
-                        loadPieData(category_amt);
-                    }
-
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                    Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_LONG);
-                }
-            }
-            @Override
-            public void JsonData(JSONArray jsonObjects) {
-
-            }
-        });
-    }
 
 
     private void resetProgressBar(){
-        getTableData(getTableName(months[new Date().getMonth()], currentYear), MainActivity.this, new Callback() {
-            @Override
-            public void StringData(String value) {
 
-            }
-
-            @RequiresApi(api = Build.VERSION_CODES.O)
-            @Override
-            public void JsonData(JSONArray jsonObjects) {
-                progressBarSetup(toggle, jsonObjects);
-            }
-        });
     }
 
     private void setupPieChart(){
@@ -414,14 +315,14 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                                     catch (Exception e){
                                         e.printStackTrace();
                                     }
-                                    new java.util.Timer().schedule(
-                                            new TimerTask() {
-                                                @Override
-                                                public void run() {
-                                                    categoryDataSetup();
-                                                }
-                                            }
-                                    , 100);
+//                                    new java.util.Timer().schedule(
+//                                            new TimerTask() {
+//                                                @Override
+//                                                public void run() {
+//                                                    categoryDataSetup();
+//                                                }
+//                                            }
+//                                    , 100);
 
                                     resetProgressBar();
                                 }
@@ -441,7 +342,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     }
 
 
-    private void loadPieData(ArrayList<Integer> category_amt){
+    private void loadPieData(ArrayList<Integer> category_amt, ArrayList<String> category_name){
         ArrayList<PieEntry> pieEntryes = new ArrayList();
         for (int i = 0; i < category_amt.size(); i++) {
             pieEntryes.add(new PieEntry(category_amt.get(i), category_name.get(i)));
@@ -470,9 +371,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
     }
 
-    public static String getTableName(String month,String year){
-        return String.format("month_%s_%s", month, year);
-    }
+
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
